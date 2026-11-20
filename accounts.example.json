@@ -1,0 +1,6 @@
+{
+  "accounts": [
+    { "name": "我",   "username": "TY0000001", "password": "password1" },
+    { "name": "家人", "username": "TY0000002", "password": "password2" }
+  ]
+}

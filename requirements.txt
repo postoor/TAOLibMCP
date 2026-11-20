@@ -1,0 +1,8 @@
+# Only needed for login_web() / reader-scoped data (loans, reservations, ...).
+# login() (search / book detail / holdings) needs the Python stdlib alone.
+cryptography>=3.4
+Pillow>=8.0
+# Also requires a system `tesseract` binary + one Latin digit model
+# (e.g. afr or eng). Install via your OS package manager, not pip:
+#   Arch:   sudo pacman -S tesseract tesseract-data-eng
+#   Debian: sudo apt install tesseract-ocr tesseract-ocr-eng

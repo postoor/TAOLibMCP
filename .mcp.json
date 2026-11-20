@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "taolib": {
+      "command": "python3",
+      "args": ["-m", "taolib.mcp_server"],
+      "cwd": "/home/lksdub/Workspace/TAOLib",
+      "env": {
+        "PYTHONPATH": "/home/lksdub/Workspace/TAOLib",
+        "TAOLIB_ENV": "/home/lksdub/Workspace/TAOLib/.env"
+      }
+    }
+  }
+}
