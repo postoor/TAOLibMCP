@@ -80,7 +80,7 @@ class TaoLibClient:
         self.csrf = m.group(1)
         return self.csrf
 
-    def gql(self, query, variables=None, op=None, authed=False):
+    def gql(self, query, variables=None, op=None, authed=False, _retry=True):
         if self.csrf is None:
             self.bootstrap()
         payload = {"query": query}
@@ -109,6 +109,10 @@ class TaoLibClient:
             resp = self._opener.open(req, timeout=self.timeout)
             body = json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
+            # The HYSESSION/CSRF session expires server-side after a while, after
+            # which every call 403s. Re-establish the session once and retry.
+            if e.code == 403 and _retry and self._relogin():
+                return self.gql(query, variables, op, authed, _retry=False)
             raise TaoLibError("HTTP %s: %s" % (e.code, e.read().decode("utf-8", "replace")[:200]))
         if isinstance(body, dict) and body.get("errors"):
             msgs = "; ".join(e.get("message", "") for e in body["errors"])
@@ -291,6 +295,21 @@ class TaoLibClient:
                 return r
             # captcha.* / textinbox => wrong captcha; retry with a fresh one
         raise TaoLibError("ssoLogin failed: " + str(last))
+
+    def _relogin(self):
+        """Re-establish an expired session using the mode last logged in with.
+
+        Returns True if a re-login was attempted (caller should retry), False if
+        there is nothing to recover (e.g. we are mid-login, so no recursion)."""
+        if self.web_session:
+            self.web_session = False
+            self.login_web()
+            return True
+        if self.app_token:
+            self.app_token = None
+            self.login()
+            return True
+        return False
 
     def _ensure(self):
         if self.web_session:

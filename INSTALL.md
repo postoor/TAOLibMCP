@@ -157,8 +157,10 @@ account — confirm intent before calling.
 ## 6. Troubleshooting
 
 - **`no accounts configured`** — no `.env` and no `accounts.json`. Do step 2.
-- **HTTP 403 on every call** — the session/CSRF handshake failed; usually a
-  network block to `webpac.typl.gov.tw`. Confirm `curl -s -o /dev/null -w '%{http_code}' https://webpac.typl.gov.tw/` returns 200.
+- **HTTP 403** — the server-side session/CSRF expires after a while; the client
+  now auto-re-logins and retries once on a 403, so this is handled transparently.
+  If 403 persists on *every* call from the start, it is usually a network block
+  to `webpac.typl.gov.tw` — confirm `curl -s -o /dev/null -w '%{http_code}' https://webpac.typl.gov.tw/` returns 200.
 - **`tesseract not found ...`** — install it + a Latin model (step 0/1), e.g.
   `apt install tesseract-ocr tesseract-ocr-eng`.
 - **`ssoLogin failed: ...captcha...`** — OCR missed the digits. `login_web`
