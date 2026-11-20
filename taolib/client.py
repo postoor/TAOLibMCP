@@ -182,9 +182,37 @@ class TaoLibClient:
         enc = Cipher(algorithms.AES(key), modes.CBC(iv)).encryptor()
         return iv.hex() + ":" + base64.b64encode(enc.update(data) + enc.finalize()).decode()
 
-    # tesseract language to use; this box ships only `afr`, which reads the
-    # plain Latin digits fine. Override via TAOLIB_TESS_LANG (e.g. "eng").
-    _TESS_LANG = os.environ.get("TAOLIB_TESS_LANG", "afr")
+    def _tess_lang(self):
+        """Pick a tesseract language model for the digit captcha.
+
+        Any Latin model reads plain digits fine. Honour TAOLIB_TESS_LANG if set,
+        otherwise auto-detect from the installed models (prefer eng, then afr,
+        then any installed model that isn't the orientation-only `osd`). This
+        way the client just works whether the host installed eng or afr."""
+        env = os.environ.get("TAOLIB_TESS_LANG")
+        if env:
+            return env
+        cached = getattr(type(self), "_TESS_LANG_CACHE", None)
+        if cached:
+            return cached
+        import subprocess
+        lang = "eng"
+        try:
+            out = subprocess.run(["tesseract", "--list-langs"],
+                                 capture_output=True, timeout=10).stdout.decode("utf-8", "replace")
+            langs = [l.strip() for l in out.splitlines()[1:] if l.strip()]
+            for pref in ("eng", "afr"):
+                if pref in langs:
+                    lang = pref
+                    break
+            else:
+                usable = [l for l in langs if l != "osd"]
+                if usable:
+                    lang = usable[0]
+        except Exception:
+            pass
+        type(self)._TESS_LANG_CACHE = lang
+        return lang
 
     def _fetch_captcha_png(self):
         """getCaptcha -> decrypt -> raw PNG bytes of the 5-digit image.
@@ -223,11 +251,17 @@ class TaoLibClient:
         bw = bw.resize((w * 5, h * 5))
         buf = io.BytesIO()
         bw.save(buf, format="PNG")
-        proc = subprocess.run(
-            ["tesseract", "-", "-", "-l", self._TESS_LANG, "--psm", "7",
-             "-c", "tessedit_char_whitelist=0123456789"],
-            input=buf.getvalue(), capture_output=True, timeout=30,
-        )
+        try:
+            proc = subprocess.run(
+                ["tesseract", "-", "-", "-l", self._tess_lang(), "--psm", "7",
+                 "-c", "tessedit_char_whitelist=0123456789"],
+                input=buf.getvalue(), capture_output=True, timeout=30,
+            )
+        except FileNotFoundError:
+            raise TaoLibError(
+                "`tesseract` not found — reader login needs it to read the login "
+                "captcha. Install it plus a Latin model, e.g. `apt install "
+                "tesseract-ocr tesseract-ocr-eng`.")
         return "".join(ch for ch in proc.stdout.decode("utf-8", "replace") if ch.isdigit())
 
     def login_web(self, username=None, password=None, retries=4):

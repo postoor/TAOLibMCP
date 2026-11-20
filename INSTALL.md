@@ -14,9 +14,9 @@ one or many library accounts. See `README.md` for API/reverse-engineering detail
 
 - Python 3.8+  →  `python3 --version`
 - (reader-scoped data only) a system `tesseract` + one Latin digit model.
-  - Check: `tesseract --list-langs`  — any of `eng` / `afr` is enough.
-  - The login captcha is solved locally by OCR'ing 5 plain digits; no external
-    OCR service is used or needed.
+  - Check: `tesseract --list-langs`  — any Latin model (`eng`, `afr`, ...) works;
+    the client auto-detects it (prefers `eng`, then `afr`). The login captcha is
+    solved locally by OCR'ing 5 plain digits; no external OCR service is used.
 
 If you ONLY need catalogue search / book detail / holdings, you can skip
 tesseract and the Python deps entirely (those use the stdlib-only `login()`).
@@ -38,9 +38,12 @@ python3 -c "import cryptography, PIL; print('deps ok')"
 ```
 
 If `tesseract --list-langs` shows no Latin model, install one via the OS package
-manager (NOT pip), e.g. Arch `sudo pacman -S tesseract tesseract-data-eng`,
-Debian `sudo apt install tesseract-ocr tesseract-ocr-eng`. If the only model is
-`afr`, set `TAOLIB_TESS_LANG=afr` (it reads digits fine); default is already `afr`.
+manager (NOT pip):
+- Debian/Ubuntu: `sudo apt install tesseract-ocr tesseract-ocr-eng`
+- Arch:          `sudo pacman -S tesseract tesseract-data-eng`
+
+The client auto-detects the installed model, so no extra config is needed. To
+force a specific one, set `TAOLIB_TESS_LANG` (e.g. `eng`).
 
 ---
 
@@ -156,9 +159,11 @@ account — confirm intent before calling.
 - **`no accounts configured`** — no `.env` and no `accounts.json`. Do step 2.
 - **HTTP 403 on every call** — the session/CSRF handshake failed; usually a
   network block to `webpac.typl.gov.tw`. Confirm `curl -s -o /dev/null -w '%{http_code}' https://webpac.typl.gov.tw/` returns 200.
+- **`tesseract not found ...`** — install it + a Latin model (step 0/1), e.g.
+  `apt install tesseract-ocr tesseract-ocr-eng`.
 - **`ssoLogin failed: ...captcha...`** — OCR missed the digits. `login_web`
-  already retries; if it persists, install a better tesseract model (`eng`) and
-  set `TAOLIB_TESS_LANG=eng`, or verify `tesseract --list-langs`.
+  already retries; if it persists, install the `eng` model and/or check
+  `tesseract --list-langs`. Force a model with `TAOLIB_TESS_LANG=eng`.
 - **Loans empty but the account has loans** — the server fell back to the
   token-only `login()` (no reader binding). Ensure deps + tesseract are present
   so `login_web()` succeeds (step 1).

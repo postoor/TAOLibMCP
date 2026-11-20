@@ -38,8 +38,8 @@ App 的 GraphQL query 字串直接嵌在 `libapp.so`；Web 版 (Next.js) 的 chu
      **AES-256-CBC** 加密，且要過**驗證碼**。
 4. **驗證碼自解**（`login_web` 內建）：`getCaptcha.message` 是 base64；decode 後對
    固定金鑰做 cyclic-XOR 得到一張 PNG（末 18 bytes 是 `hyw<timestamp>eb` 的 session
-   tag，非答案）。答案是畫在圖上的 5 位數字，用本機 `tesseract` 辨識（本機只有
-   `afr` 模型，數字照樣可讀；可用 `TAOLIB_TESS_LANG=eng` 覆寫）。
+   tag，非答案）。答案是畫在圖上的 5 位數字，用本機 `tesseract` 辨識（自動挑已安裝
+   的拉丁模型，優先 `eng` 再 `afr`；可用 `TAOLIB_TESS_LANG` 指定）。
 
 > `TaoLibClient` 兩種登入：`login()`（app token，輕量，僅非讀者資料）與
 > `login_web()`（reader-bound，讀者資料必用）。MCP server 預設走 `login_web()`。
