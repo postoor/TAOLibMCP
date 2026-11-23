@@ -430,6 +430,50 @@ class TaoLibClient:
         d = self.gql(q, {"ids": [int(i) for i in ids]}, op="batchContuineBook", authed=True)
         return d.get("batchContuineBook")
 
+    # ---- cross-borrow / 通閱 (write) ------------------------------------
+    # The 通閱 (跨館通閱 / ILL) request flow, recovered from the app:
+    #   1. cross_borrow_options(sid)  -> getApplyList: copies of a title that can
+    #      be requested; each item's `id` is the holdId for step 2.
+    #   2. cross_borrow_apply(holdId, pickupKeepSite, ...) -> apply: submit the
+    #      request, to be picked up at pickupKeepSite (a keepSiteId from sites()).
+    #   3. cancel_cross_borrow(applyId) -> doCancelApply: cancel an in-progress
+    #      request (applyId from cross_borrow_list()).
+    def cross_borrow_options(self, sid, page=1):
+        """可通閱館藏 — individual copies of a title that can be 通閱-requested.
+
+        Each item's `id` is the holdId to pass to cross_borrow_apply()."""
+        self._ensure()
+        q = ("query getCrossBorrowVolumeSummaryList($marcID:Int!,$pageNo:ID!){"
+             " getApplyList(Input:{marcID:$marcID,pageNo:$pageNo}){"
+             " items{ id barcode cno dataType dataTypeID regionID"
+             " keepSiteID keepSiteName keepRoomID keepRoomName } showNext } }")
+        d = self.gql(q, {"marcID": int(sid), "pageNo": str(page)},
+                     op="getCrossBorrowVolumeSummaryList", authed=True)
+        return d.get("getApplyList") or {}
+
+    def cross_borrow_apply(self, hold_id, pickup_keep_site, mail2="", tel="", tel2=""):
+        """申請通閱 (寫入) — request a 通閱 for a copy (holdId from
+        cross_borrow_options), picked up at pickupKeepSite (a keepSiteId from
+        sites()). mail2/tel/tel2 are optional notification contacts."""
+        self._ensure()
+        q = ("mutation apply($holdId:Int!,$pickupKeepSite:Int!,$mail2:String!,"
+             "$tel:String!,$tel2:String!){"
+             " apply(Input:{holdId:$holdId,pickupKeepSite:$pickupKeepSite,"
+             "mail2:$mail2,tel:$tel,tel2:$tel2}){ success message data } }")
+        d = self.gql(q, {"holdId": int(hold_id), "pickupKeepSite": int(pickup_keep_site),
+                         "mail2": mail2 or "", "tel": tel or "", "tel2": tel2 or ""},
+                     op="apply", authed=True)
+        return d.get("apply")
+
+    def cancel_cross_borrow(self, apply_id):
+        """取消通閱 (寫入) — cancel an in-progress 通閱 by its apply id
+        (from cross_borrow_list())."""
+        self._ensure()
+        q = ("mutation cancelCrossBorrow($id:Int!){"
+             " doCancelApply(id:$id){ success message } }")
+        d = self.gql(q, {"id": int(apply_id)}, op="cancelCrossBorrow", authed=True)
+        return d.get("doCancelApply")
+
 
 def _read_env(env_path=None):
     env = {}

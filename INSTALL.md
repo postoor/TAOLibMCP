@@ -147,6 +147,9 @@ Expect three JSON lines: serverInfo, the tool list, and a loans result.
 | `place_hold` | 預約下單 (寫入) | `holdId`, `pickupKeepSiteId`, `readerValidDate` |
 | `cancel_reservation` | 取消預約 (寫入) | `reserveId` |
 | `renew_books` | 續借 (寫入) | `ids` (借閱中的 `len_id`) |
+| `cross_borrow_options` | 可通閱館藏 | `sid`, `page?` (items.id = holdId) |
+| `cross_borrow_apply` | 申請通閱 (寫入) | `holdId`, `pickupKeepSite`, `mail2?`, `tel?`, `tel2?` |
+| `cancel_cross_borrow` | 取消通閱 (寫入) | `applyId` (my_cross_borrow 的項目 id) |
 
 Every tool except `list_accounts` also takes optional `account` (name or card
 number); omit for the default account. The three write tools change the real

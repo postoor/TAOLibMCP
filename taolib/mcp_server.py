@@ -140,6 +140,28 @@ def _tools():
          "續借 (寫入動作)。以借閱 id (借閱中書籍的 len_id) 陣列續借。",
          obj({"ids": {"type": "array", "items": {"type": "integer"}}}, ["ids"]),
          lambda a: client(acct(a)).renew_books(a["ids"])),
+
+        ("cross_borrow_options",
+         "可通閱館藏：某書 (sid，來自 search_books) 可供通閱的單冊清單。每筆 items 的 id 即申請通閱用的 holdId；另有 keepSiteName 等。",
+         obj({"sid": {"type": "integer", "description": "書目記錄 id (search 結果的 sid)"},
+              "page": {"type": "integer", "description": "頁碼，預設 1"}}, ["sid"]),
+         lambda a: client(acct(a)).cross_borrow_options(a["sid"], a.get("page", 1))),
+
+        ("cross_borrow_apply",
+         "申請通閱 (寫入動作，會真的送出通閱申請)。需 holdId(見 cross_borrow_options 的 items.id)、pickupKeepSite(取書分館 keepSiteId，見 list_sites)；mail2/tel/tel2 為選填通知聯絡方式。",
+         obj({"holdId": {"type": "integer"},
+              "pickupKeepSite": {"type": "integer", "description": "取書分館 keepSiteId"},
+              "mail2": {"type": "string"},
+              "tel": {"type": "string"},
+              "tel2": {"type": "string"}}, ["holdId", "pickupKeepSite"]),
+         lambda a: client(acct(a)).cross_borrow_apply(
+             a["holdId"], a["pickupKeepSite"],
+             a.get("mail2", ""), a.get("tel", ""), a.get("tel2", ""))),
+
+        ("cancel_cross_borrow",
+         "取消通閱 (寫入動作)。以通閱申請 id (my_cross_borrow 清單中的項目 id) 取消。",
+         obj({"applyId": {"type": "integer"}}, ["applyId"]),
+         lambda a: client(acct(a)).cancel_cross_borrow(a["applyId"])),
     ]
 
 

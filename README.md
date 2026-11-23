@@ -62,6 +62,9 @@ App 的 GraphQL query 字串直接嵌在 `libapp.so`；Web 版 (Next.js) 的 chu
 | 預約下單 | `getHoldReserve` | `getHoldReserve(holdId,pickupKeepSiteId,readerValiddate)` |
 | 取消預約 | `doCancelReserve` | `doCancelReserve(id:Int)` |
 | 續借 | `batchContuineBook` | `batchContuineBook(ids:[Int])` |
+| 可通閱館藏 | `getApplyList` | `getApplyList(Input:{marcID,pageNo})` → `items{id,...}` |
+| 申請通閱 | `apply` | `apply(Input:{holdId,pickupKeepSite,mail2,tel,tel2})` |
+| 取消通閱 | `doCancelApply` | `doCancelApply(id:Int)` |
 
 所有清單型 resolver 回傳通用 `LayoutReturnResult`：
 `{ list { values [ { ref [ { key, value } ] } ] } }`，每列是一組 key/value，
